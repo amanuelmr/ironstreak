@@ -7,8 +7,84 @@
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <main id="app"></main>
+    <div id="reminderBanner" class="reminder-banner" hidden>
+      <span aria-hidden="true">!</span>
+      <strong>You haven't submitted your proof yet. Submit before midnight.</strong>
+    </div>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div>
+            <h1>Ironstreak</h1>
+            <p id="deadlineText">Deadline: midnight</p>
+          </div>
+        </div>
+        <div class="status-pill" id="apiStatus">Connecting</div>
+      </header>
+
+      <section class="metrics" aria-label="Streak summary">
+        <div class="metric">
+          <span>Current</span>
+          <strong id="currentStreak">0</strong>
+          <small>days</small>
+        </div>
+        <div class="metric">
+          <span>Longest</span>
+          <strong id="longestStreak">0</strong>
+          <small>days</small>
+        </div>
+        <div class="metric metric-wide">
+          <span>Goal</span>
+          <strong id="goalTitle">No active goal</strong>
+          <small id="todayStatus">PENDING</small>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <section class="panel goal-panel" aria-labelledby="goalHeading">
+          <div class="panel-heading">
+            <h2 id="goalHeading">Daily Commitment</h2>
+            <span class="panel-icon" aria-hidden="true">#</span>
+          </div>
+          <form id="goalForm" class="stacked-form">
+            <label>
+              <span>Activity</span>
+              <input id="goalInput" name="title" type="text" maxlength="200" autocomplete="off" required>
+            </label>
+            <label>
+              <span>Description</span>
+              <textarea id="goalDescription" name="description" rows="3"></textarea>
+            </label>
+            <button type="submit" class="primary-action">
+              <span aria-hidden="true">+</span>
+              Set Goal
+            </button>
+          </form>
+        </section>
+
+        <section class="panel today-panel" aria-labelledby="todayHeading">
+          <div class="panel-heading">
+            <h2 id="todayHeading">Today</h2>
+            <span id="todayBadge" class="badge">PENDING</span>
+          </div>
+          <div id="todayCard" class="today-card"></div>
+        </section>
+
+        <section class="panel history-panel" aria-labelledby="historyHeading">
+          <div class="panel-heading">
+            <h2 id="historyHeading">Last 30 Days</h2>
+            <span class="panel-icon" aria-hidden="true">30</span>
+          </div>
+          <div id="heatmap" class="heatmap" aria-label="30-day streak history"></div>
+        </section>
+      </section>
+    </main>
     <script src="app.js"></script>
   </body>
 </html>
-
