@@ -32,14 +32,17 @@ cd backend
 uvicorn main:app --reload
 ```
 
-Open `frontend/index.html` directly in a browser, or serve it:
+In another terminal, start the frontend:
 
 ```bash
 cd frontend
-python3 -m http.server 3000
+npm install
+npm run dev
 ```
 
-The frontend calls `http://127.0.0.1:8000` by default. To point it elsewhere, run this in the browser console before reloading:
+Open the Vite URL printed in the terminal, usually `http://127.0.0.1:5173`.
+
+The frontend calls `http://127.0.0.1:8000` by default. To point it elsewhere, create a Vite env file or run this in the browser console before reloading:
 
 ```js
 localStorage.setItem("ironstreakApiBase", "http://127.0.0.1:8000");
@@ -60,9 +63,14 @@ ironstreak/
 │   │   └── checkin.py       Proof submission and reminder status endpoints
 │   └── requirements.txt     Python dependencies
 ├── frontend/
-│   ├── index.html           Single page app markup
-│   ├── style.css            App styling
-│   └── app.js               Frontend state, polling, forms, and heatmap
+│   ├── index.html           Vite HTML entry point
+│   ├── package.json         React/Vite scripts and dependencies
+│   ├── vite.config.ts       Vite configuration
+│   ├── tsconfig.json        TypeScript configuration
+│   └── src/
+│       ├── App.tsx          Frontend state, polling, forms, and heatmap
+│       ├── main.tsx         React app mount
+│       └── styles.css       App styling
 └── README.md
 ```
 
@@ -73,5 +81,5 @@ ironstreak/
 | Backend | Python 3.11+ with FastAPI |
 | Database | SQLite with SQLAlchemy ORM |
 | Scheduler | APScheduler inside FastAPI |
-| Frontend | Vanilla HTML, CSS, and JavaScript |
+| Frontend | React, TypeScript, and CSS with Vite |
 | Dev Server | Uvicorn |

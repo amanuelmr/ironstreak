@@ -5,6 +5,7 @@ from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import SessionLocal
@@ -56,7 +57,12 @@ def get_or_create_today(db: Session) -> StreakDay:
     if streak_day is None:
         streak_day = StreakDay(date=today, status="pending", reminder_count=0)
         db.add(streak_day)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            streak_day = db.query(StreakDay).filter(StreakDay.date == today).one()
+            return streak_day
         db.refresh(streak_day)
     return streak_day
 
