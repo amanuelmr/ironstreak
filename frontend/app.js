@@ -20,6 +20,10 @@ const els = {
   heatmap: document.querySelector("#heatmap"),
   reminderBanner: document.querySelector("#reminderBanner"),
   deadlineText: document.querySelector("#deadlineText"),
+  streakDial: document.querySelector("#streakDial"),
+  missionDate: document.querySelector("#missionDate"),
+  remindersSent: document.querySelector("#remindersSent"),
+  reminderSteps: document.querySelectorAll(".reminder-step"),
   goalForm: document.querySelector("#goalForm"),
   goalInput: document.querySelector("#goalInput"),
   goalDescription: document.querySelector("#goalDescription"),
@@ -96,6 +100,7 @@ async function pollToday() {
 
     setApiStatus("online");
     renderToday();
+    renderReminderStatus();
 
     if (today.status === "submitted") {
       hideReminderBanner();
@@ -180,10 +185,14 @@ async function submitProof(event) {
 
 function renderStreak() {
   const streak = state.streak || {};
-  els.currentStreak.textContent = streak.current_streak ?? 0;
+  const current = streak.current_streak ?? 0;
+  els.currentStreak.textContent = current;
   els.longestStreak.textContent = streak.longest_streak ?? 0;
   els.goalTitle.textContent = streak.goal_title || "No active goal";
   els.todayStatus.textContent = normalizeStatus(streak.today_status || "pending");
+
+  const dialDegrees = Math.min(360, current * 18);
+  els.streakDial.style.setProperty("--dial-progress", `${dialDegrees}deg`);
 }
 
 function renderToday() {
@@ -192,6 +201,7 @@ function renderToday() {
 
   const status = today.status || "pending";
   const statusLabel = normalizeStatus(status);
+  els.missionDate.textContent = `${formatLongDate(today.date)} · deadline at midnight`;
   els.todayBadge.textContent = statusLabel;
   els.todayBadge.className = `badge ${status}`;
 
@@ -219,20 +229,22 @@ function pendingMarkup(today) {
   return `
     <div class="today-date">Today · ${escapeHtml(formatDate(today.date))}</div>
     <form id="proofForm" class="proof-form">
-      <label>
-        <span>Proof link</span>
-        <input name="proof_link" type="url" inputmode="url" autocomplete="url" required>
-      </label>
-      <label>
-        <span>Note</span>
-        <textarea name="proof_note" rows="4"></textarea>
-      </label>
-      <div class="duration-row">
+      <div class="proof-grid">
         <label>
-          <span>Duration</span>
-          <input name="duration_minutes" type="number" min="60" step="1" value="60" required>
+          <span>Proof link</span>
+          <input name="proof_link" type="url" inputmode="url" autocomplete="url" required>
         </label>
-        <small>min >= 60</small>
+        <label>
+          <span>Note</span>
+          <textarea name="proof_note" rows="5"></textarea>
+        </label>
+        <div class="duration-row">
+          <label>
+            <span>Duration</span>
+            <input name="duration_minutes" type="number" min="60" step="1" value="60" required>
+          </label>
+          <small>min >= 60</small>
+        </div>
       </div>
       <div class="field-error">${hasGoal ? "" : "Set an active goal before submitting proof."}</div>
       <button type="submit" class="primary-action" ${hasGoal ? "" : "disabled"}>
@@ -247,10 +259,22 @@ function submittedMarkup(today) {
   return `
     <div class="state-block">
       <div class="today-date">Today · ${escapeHtml(formatDate(today.date))}</div>
-      <strong>Submitted</strong>
+      <strong>Proof locked in.</strong>
       <p><a href="${escapeAttribute(today.proof_link)}" target="_blank" rel="noreferrer">${escapeHtml(today.proof_link)}</a></p>
-      <p>Duration: ${escapeHtml(String(today.duration_minutes || 0))} min</p>
-      <p>Submitted at: ${escapeHtml(formatTime(today.submitted_at))}</p>
+      <div class="receipt-grid">
+        <div>
+          <span>Status</span>
+          <strong>Submitted</strong>
+        </div>
+        <div>
+          <span>Duration</span>
+          <strong>${escapeHtml(String(today.duration_minutes || 0))} min</strong>
+        </div>
+        <div>
+          <span>Logged</span>
+          <strong>${escapeHtml(formatTime(today.submitted_at))}</strong>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -259,7 +283,7 @@ function failedMarkup(today) {
   return `
     <div class="state-block">
       <div class="today-date">Today · ${escapeHtml(formatDate(today.date))}</div>
-      <strong>Failed</strong>
+      <strong>Streak reset.</strong>
       <p>Streak reset to 0.</p>
       <p>Come back tomorrow.</p>
     </div>
@@ -278,7 +302,7 @@ function renderHeatmap(history) {
     const entry = byDate.get(key);
     const status = entry?.status || "empty";
     const label = `${formatDate(key)} · ${normalizeStatus(status)}`;
-    cells.push(`<div class="heat-cell ${status}" title="${escapeAttribute(label)}" aria-label="${escapeAttribute(label)}"></div>`);
+    cells.push(`<div class="heat-cell ${status}" title="${escapeAttribute(label)}" aria-label="${escapeAttribute(label)}">${date.getDate()}</div>`);
   }
 
   els.heatmap.innerHTML = cells.join("");
@@ -287,6 +311,14 @@ function renderHeatmap(history) {
 function renderReminderStatus() {
   const reminder = state.reminder;
   if (!reminder) return;
+
+  const sent = state.today?.reminder_count ?? reminder.reminders_sent_today ?? 0;
+  els.remindersSent.textContent = `${sent} sent`;
+  els.reminderSteps.forEach((step) => {
+    const index = Number(step.dataset.reminderIndex);
+    step.classList.toggle("sent", index <= sent);
+    step.classList.toggle("next", index === sent + 1 && state.today?.status === "pending");
+  });
 
   if (reminder.next_reminder_at) {
     els.deadlineText.textContent = `Next reminder: ${formatTime(reminder.next_reminder_at)} · Deadline: midnight`;
@@ -343,6 +375,15 @@ function formatDate(value) {
   const date = parseDateOnly(value);
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function formatLongDate(value) {
+  const date = parseDateOnly(value);
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
     day: "numeric",
   }).format(date);
 }
