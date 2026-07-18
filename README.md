@@ -8,7 +8,7 @@ All times use the local timezone from `TZ`, defaulting to `Africa/Addis_Ababa`.
 
 | Time | Job |
 |---|---|
-| 00:01 | Create today's pending streak day |
+| 00:01 | Roll over to the new day (fallback creation of the pending streak day) |
 | 20:00 | Reminder 1 |
 | 21:00 | Reminder 2 |
 | 21:30 | Reminder 3 |
@@ -18,6 +18,8 @@ All times use the local timezone from `TZ`, defaulting to `Africa/Addis_Ababa`.
 | 23:30 | Reminder 7 |
 | 23:59 | Fail pending day and reset current streak |
 
+You don't create the streak day yourself, and it isn't only created at 00:01. Today's pending streak day is created automatically the first time the app or API is touched that day (app startup and every read endpoint call `get_or_create_today`). The 00:01 job is just a fallback that guarantees the record exists even if you never open the app.
+
 With browser notifications enabled in the app header, each reminder fires a desktop notification while the tab is open.
 
 ## Run Locally
@@ -25,7 +27,7 @@ With browser notifications enabled in the app header, each reminder fires a desk
 The backend needs a Postgres database (a free [Neon](https://neon.tech) instance works well).
 
 ```bash
-git clone https://github.com/your-username/ironstreak
+git clone https://github.com/amanuelmr/ironstreak
 cd ironstreak
 
 python3 -m venv .venv
@@ -47,13 +49,15 @@ Environment variables (see `backend/.env.example`):
 | `TZ` | IANA timezone for the daily boundary and reminders | `Africa/Addis_Ababa` |
 | `ALLOWED_ORIGINS` | Comma-separated CORS origins | `http://localhost:5173,http://127.0.0.1:5173` |
 
-In another terminal, start the frontend:
+In another terminal, start the frontend. This project uses [pnpm](https://pnpm.io):
 
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
+
+To build for production, run `pnpm build`.
 
 Open the Vite URL printed in the terminal, usually `http://127.0.0.1:5173`.
 
@@ -124,4 +128,5 @@ ironstreak/
 | Database | PostgreSQL (Neon) with SQLAlchemy ORM |
 | Scheduler | APScheduler inside FastAPI |
 | Frontend | React, TypeScript, TanStack Query, and CSS with Vite |
+| Package Manager | pnpm (frontend) |
 | Dev Server | Uvicorn |
