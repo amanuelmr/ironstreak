@@ -1,0 +1,215 @@
+/* App shell, header, banner, grids, responsive */
+
+.app-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Reminder banner — stacks above the sticky header */
+
+.reminder-banner {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6);
+  background: var(--warn-fill);
+  color: var(--on-warn);
+  font-size: var(--text-sm);
+}
+
+.reminder-banner strong {
+  flex: 1;
+}
+
+.dismiss-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  color: inherit;
+  opacity: 0.85;
+}
+
+.dismiss-button:hover {
+  opacity: 1;
+  background: rgb(0 0 0 / 15%);
+}
+
+/* Header — the one glass element */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin: 0 calc(-1 * var(--space-6));
+  padding: var(--space-4) var(--space-6);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-default);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .topbar {
+    background: var(--bg-canvas);
+  }
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.brand-block h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
+}
+
+.brand-block p {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.soft-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.api-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+.api-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.api-pill.online {
+  color: var(--success-text);
+  background: var(--success-soft);
+}
+
+.api-pill.offline {
+  color: var(--danger-text);
+  background: var(--danger-soft);
+}
+
+.api-pill.connecting {
+  color: var(--text-muted);
+  background: var(--bg-surface-2);
+}
+
+/* Grids */
+
+.daily-board {
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: var(--space-6);
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.offline-panel {
+  margin-top: var(--space-8);
+}
+
+/* Responsive */
+
+@media (max-width: 980px) {
+  .daily-board,
+  .support-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .app-shell {
+    padding: 0 var(--space-4) var(--space-12);
+    gap: var(--space-4);
+  }
+
+  .topbar {
+    margin: 0 calc(-1 * var(--space-4));
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .form-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 440px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-block p {
+    display: none;
+  }
+}

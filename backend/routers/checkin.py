@@ -15,6 +15,7 @@ from scheduler import (
     next_reminder_at,
     today_local_date,
 )
+from schemas import CheckinResultOut, ReminderStatusOut, TodayCheckinOut
 
 router = APIRouter(prefix="/api/checkin", tags=["checkin"])
 reminder_router = APIRouter(prefix="/api/reminder", tags=["reminder"])
@@ -43,7 +44,7 @@ def _serialize_today(db: Session) -> dict:
     }
 
 
-@router.post("")
+@router.post("", response_model=CheckinResultOut)
 def submit_checkin(payload: CheckinRequest, db: Annotated[Session, Depends(get_db)]) -> dict:
     if not _has_active_goal(db):
         raise HTTPException(status_code=400, detail="Set an active goal before submitting proof.")
@@ -79,12 +80,12 @@ def submit_checkin(payload: CheckinRequest, db: Annotated[Session, Depends(get_d
     }
 
 
-@router.get("/today")
+@router.get("/today", response_model=TodayCheckinOut)
 def get_today_checkin(db: Annotated[Session, Depends(get_db)]) -> dict:
     return _serialize_today(db)
 
 
-@reminder_router.get("/status")
+@reminder_router.get("/status", response_model=ReminderStatusOut)
 def get_reminder_status(db: Annotated[Session, Depends(get_db)]) -> dict:
     today = get_or_create_today(db)
     upcoming = next_reminder_at(today)

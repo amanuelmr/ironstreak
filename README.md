@@ -18,7 +18,11 @@ All times use the local timezone from `TZ`, defaulting to `Africa/Addis_Ababa`.
 | 23:30 | Reminder 7 |
 | 23:59 | Fail pending day and reset current streak |
 
+With browser notifications enabled in the app header, each reminder fires a desktop notification while the tab is open.
+
 ## Run Locally
+
+The backend needs a Postgres database (a free [Neon](https://neon.tech) instance works well).
 
 ```bash
 git clone https://github.com/your-username/ironstreak
@@ -28,9 +32,20 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
 
+cp backend/.env.example backend/.env
+# edit backend/.env and set DATABASE_URL to your Postgres connection string
+
 cd backend
 uvicorn main:app --reload
 ```
+
+Environment variables (see `backend/.env.example`):
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `DATABASE_URL` | Postgres connection string | required |
+| `TZ` | IANA timezone for the daily boundary and reminders | `Africa/Addis_Ababa` |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins | `http://localhost:5173,http://127.0.0.1:5173` |
 
 In another terminal, start the frontend:
 
@@ -42,35 +57,62 @@ npm run dev
 
 Open the Vite URL printed in the terminal, usually `http://127.0.0.1:5173`.
 
-The frontend calls `http://127.0.0.1:8000` by default. To point it elsewhere, create a Vite env file or run this in the browser console before reloading:
+The frontend calls `http://127.0.0.1:8000` by default. To point it elsewhere, set `VITE_API_BASE` in a Vite env file or run this in the browser console before reloading:
 
 ```js
 localStorage.setItem("ironstreakApiBase", "http://127.0.0.1:8000");
 ```
+
+## API
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/goal` | Set a new active goal (deactivates the previous one) |
+| GET | `/api/goal` | Get the active goal (404 if none) |
+| GET | `/api/streak` | Streak counters, today's status, active goal title/description, server timezone, and `server_today` |
+| GET | `/api/history?days=N` | Streak days in the last N calendar days (1–365, default 30), newest first |
+| GET | `/api/stats` | Totals: submitted/failed days, completion rate, minutes/hours logged, streaks |
+| POST | `/api/checkin` | Submit today's proof (link, note, duration ≥ 60 min) |
+| GET | `/api/checkin/today` | Today's streak day |
+| GET | `/api/reminder/status` | Next reminder time and reminders sent today |
+| GET | `/api/health` | Liveness probe |
+
+## Tests
+
+```bash
+cd backend
+python -m pytest
+```
+
+Tests run against an in-memory SQLite database via a dependency override — they never touch the Postgres configured in `.env`, and the scheduler is never started.
 
 ## Project Structure
 
 ```text
 ironstreak/
 ├── backend/
-│   ├── main.py              FastAPI app entry point and scheduler startup
+│   ├── main.py              FastAPI app entry point, CORS, and scheduler startup
 │   ├── models.py            SQLAlchemy ORM models
-│   ├── database.py          SQLite engine, session factory, and Base
+│   ├── schemas.py           Pydantic response models
+│   ├── database.py          Postgres engine, session factory, and Base
 │   ├── scheduler.py         APScheduler reminder, reset, and fail jobs
 │   ├── routers/
 │   │   ├── goal.py          Goal create/get endpoints
-│   │   ├── streak.py        Streak stats and history endpoints
+│   │   ├── streak.py        Streak, history, and stats endpoints
 │   │   └── checkin.py       Proof submission and reminder status endpoints
-│   └── requirements.txt     Python dependencies
+│   ├── tests/               Pytest suite (in-memory SQLite)
+│   ├── .env.example         Environment variable template
+│   └── requirements.txt     Pinned Python dependencies
 ├── frontend/
-│   ├── index.html           Vite HTML entry point
+│   ├── index.html           Vite HTML entry point, fonts, theme bootstrap
 │   ├── package.json         React/Vite scripts and dependencies
-│   ├── vite.config.ts       Vite configuration
-│   ├── tsconfig.json        TypeScript configuration
 │   └── src/
-│       ├── App.tsx          Frontend state, polling, forms, and heatmap
-│       ├── main.tsx         React app mount
-│       └── styles.css       App styling
+│       ├── App.tsx          Layout shell
+│       ├── api/             Typed fetch client and endpoint functions
+│       ├── hooks/           TanStack Query hooks, theme, notifications
+│       ├── components/      Panels, calendar, forms, skeletons
+│       ├── lib/             Date/calendar math, confetti, sound
+│       └── styles/          Design tokens and stylesheets
 └── README.md
 ```
 
@@ -79,7 +121,7 @@ ironstreak/
 | Layer | Technology |
 |---|---|
 | Backend | Python 3.11+ with FastAPI |
-| Database | SQLite with SQLAlchemy ORM |
+| Database | PostgreSQL (Neon) with SQLAlchemy ORM |
 | Scheduler | APScheduler inside FastAPI |
-| Frontend | React, TypeScript, and CSS with Vite |
+| Frontend | React, TypeScript, TanStack Query, and CSS with Vite |
 | Dev Server | Uvicorn |

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Goal
 from scheduler import local_now
+from schemas import GoalOut
 
 router = APIRouter(prefix="/api/goal", tags=["goal"])
 
@@ -18,7 +19,7 @@ class GoalRequest(BaseModel):
     description: str | None = None
 
 
-@router.post("")
+@router.post("", response_model=GoalOut)
 def create_goal(payload: GoalRequest, db: Annotated[Session, Depends(get_db)]) -> dict:
     db.query(Goal).filter(Goal.is_active.is_(True)).update({"is_active": False})
     goal = Goal(
@@ -39,7 +40,7 @@ def create_goal(payload: GoalRequest, db: Annotated[Session, Depends(get_db)]) -
     }
 
 
-@router.get("")
+@router.get("", response_model=GoalOut)
 def get_goal(db: Annotated[Session, Depends(get_db)]) -> dict:
     goal = db.query(Goal).filter(Goal.is_active.is_(True)).order_by(Goal.id.desc()).first()
     if goal is None:
