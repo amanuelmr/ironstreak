@@ -1,4 +1,4 @@
-import type { StreakDay } from "../types";
+import type { ActivityDay } from "../types";
 import { addDays, formatShortWeekdayDate, monthLabel, parseDateOnly, startOfWeek, toDateKey } from "./dates";
 
 export type CalendarCell =
@@ -6,11 +6,9 @@ export type CalendarCell =
   | {
       kind: "day";
       key: string;
-      status: StreakDay["status"] | "empty";
       level: 0 | 1 | 2 | 3 | 4;
       isToday: boolean;
       label: string;
-      day: StreakDay | null;
     };
 
 export type CalendarModel = {
@@ -19,30 +17,29 @@ export type CalendarModel = {
   weekdayLabels: string[];
 };
 
-function levelFor(day: StreakDay): 0 | 2 | 3 | 4 {
-  if (day.status !== "submitted") return 0;
-  const minutes = day.duration_minutes;
-  if (minutes == null) return 2;
+function levelFor(minutes: number, entryCount: number): 0 | 1 | 2 | 3 | 4 {
+  if (entryCount === 0) return 0;
   if (minutes >= 120) return 4;
-  if (minutes >= 90) return 3;
-  return 2;
+  if (minutes >= 60) return 3;
+  if (minutes >= 30) return 2;
+  if (minutes > 0) return 1;
+  return 2; // logged something but no minutes recorded
 }
 
-function cellLabel(key: string, status: string, day: StreakDay | null): string {
-  const base = `${formatShortWeekdayDate(key)} · ${status}`;
-  if (day?.status === "submitted" && day.duration_minutes != null) {
-    return `${base} · ${day.duration_minutes} min`;
-  }
-  return base;
+function cellLabel(key: string, day: ActivityDay | undefined): string {
+  const base = formatShortWeekdayDate(key);
+  if (!day) return `${base} · no activity`;
+  const bits = [`${day.entry_count} ${day.entry_count === 1 ? "entry" : "entries"}`];
+  if (day.minutes > 0) bits.push(`${day.minutes} min`);
+  return `${base} · ${bits.join(" · ")}`;
 }
 
 /**
  * Week-column contribution grid, Monday-start, anchored on the server's
- * "today" (never the browser clock — the backend day boundary is its own
- * timezone).
+ * "today". Intensity reflects total logged minutes across all challenges.
  */
-export function buildCalendar(history: StreakDay[], todayKey: string, weeks = 26): CalendarModel {
-  const byDate = new Map(history.map((day) => [day.date, day]));
+export function buildCalendar(activity: ActivityDay[], todayKey: string, weeks = 26): CalendarModel {
+  const byDate = new Map(activity.map((day) => [day.date, day]));
   const anchor = parseDateOnly(todayKey);
   const gridStart = addDays(startOfWeek(anchor), -(weeks - 1) * 7);
 
@@ -56,16 +53,13 @@ export function buildCalendar(history: StreakDay[], todayKey: string, weeks = 26
         column.push({ kind: "future", key });
         continue;
       }
-      const entry = byDate.get(key) ?? null;
-      const status = entry?.status ?? "empty";
+      const day = byDate.get(key);
       column.push({
         kind: "day",
         key,
-        status,
-        level: entry ? levelFor(entry) : 0,
+        level: day ? levelFor(day.minutes, day.entry_count) : 0,
         isToday: key === todayKey,
-        label: cellLabel(key, status, entry),
-        day: entry,
+        label: cellLabel(key, day),
       });
     }
     columns.push(column);

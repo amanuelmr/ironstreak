@@ -1,0 +1,32 @@
+/* Options surface */
+
+.options-page {
+  max-width: 720px;
+}
+
+.options-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.options-section h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+
+.options-note {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.options-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.options-message {
+  font-size: var(--text-sm);
+  color: var(--success-text);
+}

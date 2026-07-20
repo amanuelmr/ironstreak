@@ -1,58 +1,69 @@
-export type DayStatus = "pending" | "submitted" | "failed";
-
 export type Theme = "light" | "dark";
 
-export type Streak = {
+export type Overview = {
   current_streak: number;
   longest_streak: number;
-  today_status: DayStatus;
-  goal_title: string | null;
-  goal_description?: string | null;
-  timezone?: string;
-  server_today?: string;
+  active_count: number;
+  completed_count: number;
+  total_hours_logged: number;
+  timezone: string;
+  server_today: string;
 };
 
-export type StreakDay = {
-  id?: number;
+export type ActivityDay = {
   date: string;
-  status: DayStatus;
-  proof_link: string | null;
-  proof_note: string | null;
-  duration_minutes: number | null;
-  submitted_at: string | null;
-  reminder_count: number;
+  entry_count: number;
+  minutes: number;
 };
 
-export type ReminderStatus = {
-  next_reminder_at: string | null;
-  reminders_sent_today: number;
-  deadline: string;
-};
+export type ChallengeStatus = "active" | "completed";
 
-export type Goal = {
+export type Challenge = {
   id: number;
   title: string;
   description: string | null;
+  start_date: string;
+  end_date: string;
+  status: ChallengeStatus;
+  requires_daily_checkin: boolean;
   created_at: string;
-};
-
-export type Stats = {
-  total_submitted_days: number;
-  total_failed_days: number;
-  completion_rate: number;
-  total_minutes_logged: number;
-  total_hours_logged: number;
+  completed_at: string | null;
+  entry_count: number;
+  is_overdue: boolean;
+  days_remaining: number;
   current_streak: number;
-  longest_streak: number;
+  best_streak: number;
 };
 
-export type CheckinPayload = {
-  proof_link: string;
-  proof_note: string | null;
-  duration_minutes: number;
+export type ChallengeEntry = {
+  id: number;
+  note: string;
+  link: string | null;
+  duration_minutes: number | null;
+  logged_at: string;
 };
 
-export type GoalPayload = {
+export type ChallengeDetail = Challenge & { entries: ChallengeEntry[] };
+
+export type ChallengeCreatePayload = {
   title: string;
   description: string | null;
+  start_date: string | null;
+  end_date: string;
+  requires_daily_checkin: boolean;
+};
+
+export type ChallengeUpdatePayload = Partial<{
+  title: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  status: ChallengeStatus;
+  requires_daily_checkin: boolean;
+}>;
+
+export type ChallengeEntryPayload = {
+  note: string;
+  link: string | null;
+  duration_minutes: number | null;
 };

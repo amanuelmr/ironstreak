@@ -1,70 +1,96 @@
 """Pydantic response schemas for Ironstreak."""
 
 from datetime import date, datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-
-
-class GoalOut(BaseModel):
-    id: int
-    title: str
-    description: str | None
-    created_at: datetime
-
-
-class StreakDayOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    date: date
-    status: str
-    proof_link: str | None
-    proof_note: str | None
-    duration_minutes: int | None
-    submitted_at: datetime | None
-    reminder_count: int
-
-
-class TodayCheckinOut(BaseModel):
-    date: date
-    status: str
-    proof_link: str | None
-    proof_note: str | None
-    duration_minutes: int | None
-    submitted_at: datetime | None
-    reminder_count: int
-
-
-class CheckinResultOut(TodayCheckinOut):
-    current_streak: int
-    longest_streak: int
-
-
-class StreakOut(BaseModel):
-    current_streak: int
-    longest_streak: int
-    today_status: str
-    goal_title: str | None
-    goal_description: str | None
-    timezone: str
-    server_today: date
-
-
-class StatsOut(BaseModel):
-    total_submitted_days: int
-    total_failed_days: int
-    completion_rate: float
-    total_minutes_logged: int
-    total_hours_logged: float
-    current_streak: int
-    longest_streak: int
-
-
-class ReminderStatusOut(BaseModel):
-    next_reminder_at: datetime | None
-    reminders_sent_today: int
-    deadline: str
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class HealthOut(BaseModel):
     status: str
+
+
+class OverviewOut(BaseModel):
+    current_streak: int
+    longest_streak: int
+    active_count: int
+    completed_count: int
+    total_hours_logged: float
+    timezone: str
+    server_today: date
+
+
+class ActivityDayOut(BaseModel):
+    date: date
+    entry_count: int
+    minutes: int
+
+
+class ChallengeCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+    start_date: date | None = None
+    end_date: date
+    requires_daily_checkin: bool = False
+
+    @model_validator(mode="after")
+    def _check_dates(self) -> "ChallengeCreate":
+        if self.start_date is not None and self.end_date < self.start_date:
+            raise ValueError("end_date must be on or after start_date")
+        return self
+
+
+class ChallengeUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    status: Literal["active", "completed"] | None = None
+    requires_daily_checkin: bool | None = None
+
+    @model_validator(mode="after")
+    def _check_dates(self) -> "ChallengeUpdate":
+        if (
+            self.start_date is not None
+            and self.end_date is not None
+            and self.end_date < self.start_date
+        ):
+            raise ValueError("end_date must be on or after start_date")
+        return self
+
+
+class ChallengeEntryCreate(BaseModel):
+    note: str = Field(min_length=1)
+    link: str | None = None
+    duration_minutes: int | None = Field(default=None, ge=1)
+
+
+class ChallengeEntryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    note: str
+    link: str | None
+    duration_minutes: int | None
+    logged_at: datetime
+
+
+class ChallengeOut(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    start_date: date
+    end_date: date
+    status: str
+    requires_daily_checkin: bool
+    created_at: datetime
+    completed_at: datetime | None
+    entry_count: int
+    is_overdue: bool
+    days_remaining: int
+    current_streak: int
+    best_streak: int
+
+
+class ChallengeDetailOut(ChallengeOut):
+    entries: list[ChallengeEntryOut]

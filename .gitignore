@@ -8,3 +8,4 @@ __pycache__/
 *.sqlite
 .env
 .DS_Store
+ironstreak-extension.zip

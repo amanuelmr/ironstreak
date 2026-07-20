@@ -1,8 +1,6 @@
 export const qk = {
-  streak: ["streak"] as const,
-  today: ["today"] as const,
-  history: (days: number) => ["history", days] as const,
-  reminder: ["reminder"] as const,
-  goal: ["goal"] as const,
-  stats: ["stats"] as const,
+  overview: ["overview"] as const,
+  activity: (days: number) => ["activity", days] as const,
+  challenges: (status?: string) => ["challenges", status ?? "all"] as const,
+  challenge: (id: number) => ["challenge", id] as const,
 };

@@ -2,17 +2,21 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "bundle": "pnpm build && rm -f ironstreak-extension.zip && cd dist && zip -r -X ../ironstreak-extension.zip . && cd .."
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
     "canvas-confetti": "^1.9.4",
+    "dexie": "^4.4.4",
     "lucide-react": "^0.561.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"
   },
   "devDependencies": {
+    "@crxjs/vite-plugin": "^2.7.1",
     "@types/canvas-confetti": "^1.9.0",
+    "@types/chrome": "^0.2.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
