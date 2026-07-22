@@ -1,9 +1,15 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Download, Flame, Moon, Sun, Trash2, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { Bell, Download, Flame, Moon, Sun, Trash2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { useTheme } from "../hooks/useTheme";
 import { clearAllData, exportData, importData, type Backup } from "../data/repo";
+import {
+  getReminderSettings,
+  remindersSupported,
+  sendTestNotification,
+  setReminderSettings,
+} from "../lib/reminders";
 
 export function Options() {
   const { theme, toggleTheme } = useTheme();
@@ -11,6 +17,24 @@ export function Options() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
+
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState("20:00");
+
+  useEffect(() => {
+    void getReminderSettings().then((s) => {
+      setReminderEnabled(s.enabled);
+      setReminderTime(s.time);
+    });
+  }, []);
+
+  function updateReminder(next: { enabled?: boolean; time?: string }) {
+    const enabled = next.enabled ?? reminderEnabled;
+    const time = next.time ?? reminderTime;
+    setReminderEnabled(enabled);
+    setReminderTime(time);
+    void setReminderSettings({ enabled, time });
+  }
 
   async function handleExport() {
     const data = await exportData();
@@ -105,6 +129,49 @@ export function Options() {
           </button>
         </div>
         {message && <p className="options-message">{message}</p>}
+      </section>
+
+      <section className="tool-panel options-section">
+        <h2>Reminders</h2>
+        {remindersSupported ? (
+          <>
+            <p className="options-note">
+              A gentle once-a-day nudge — it only fires if you have an active challenge and haven't
+              logged anything that day, and never opens a tab on its own. Reminders work only while
+              your browser is running.
+            </p>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={reminderEnabled}
+                onChange={(event) => updateReminder({ enabled: event.target.checked })}
+              />
+              <span>
+                Daily reminder
+                <small>Nudge me if I haven't kept my streak.</small>
+              </span>
+            </label>
+            <label className="field reminder-time">
+              <span>Reminder time</span>
+              <input
+                type="time"
+                value={reminderTime}
+                disabled={!reminderEnabled}
+                onChange={(event) => updateReminder({ time: event.target.value })}
+              />
+            </label>
+            <div className="options-actions">
+              <button type="button" className="secondary-button" onClick={sendTestNotification}>
+                <Bell size={15} aria-hidden="true" />
+                Send test notification
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="options-note">
+            Reminders are available when Ironstreak runs as an installed extension.
+          </p>
+        )}
       </section>
     </main>
   );

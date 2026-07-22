@@ -8,7 +8,7 @@
     "48": "icons/48.png",
     "128": "icons/128.png"
   },
-  "permissions": ["unlimitedStorage", "storage"],
+  "permissions": ["unlimitedStorage", "storage", "alarms", "notifications"],
   "background": {
     "service_worker": "src/sw.ts",
     "type": "module"

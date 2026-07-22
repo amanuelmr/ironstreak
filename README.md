@@ -33,13 +33,17 @@ For development, `pnpm build` writes the unpacked extension to `frontend/dist/` 
 ## Data & privacy
 
 - Stored locally in your browser via **IndexedDB**; the extension makes no network calls (the one exception is loading fonts from Google Fonts, with a system-font fallback).
-- **Options page** (right-click the icon → Options, or the extensions page → Details → Extension options): toggle theme, **Export backup (JSON)**, **Import backup**, and **Clear all data**.
+- **Options page** (right-click the icon → Options, or the extensions page → Details → Extension options): toggle theme, set a daily reminder (below), **Export backup (JSON)**, **Import backup**, and **Clear all data**.
 - Data is per-browser/per-device. Export + import is how you move it or keep a backup — do it regularly, since uninstalling clears local storage.
+
+## Reminders
+
+Optional and **off by default**. In Options, enable **Daily reminder** and pick a time (default 8:00 PM). Once a day at that time, Ironstreak sends a single gentle notification — but only if you have an active challenge and haven't logged anything yet that day (if your streak is already safe, it stays silent). Clicking the notification opens the dashboard; it never opens a tab on its own. Use **Send test notification** to confirm it works. Reminders only fire while your browser is running (a missed one shows shortly after you next open the browser).
 
 ## Surfaces
 
 - **Dashboard** — opens in a tab when you click the toolbar icon (clicking again re-focuses the same tab): iron streak, activity heatmap, and your challenges. Log progress on each challenge here.
-- **Options** — settings, backup/restore.
+- **Options** — theme, daily reminder, backup/restore.
 
 ## Project Structure
 
@@ -73,7 +77,6 @@ ironstreak/
 
 ## Follow-ups (not in this build)
 
-- **Streak reminders** via `chrome.alarms` + `chrome.notifications` (would reuse the existing service worker).
 - **Firefox** support (`webextension-polyfill`, `browser_specific_settings`, AMO listing).
 - **Chrome Web Store** publish for public discoverability.
 - **Cross-device sync** beyond manual export/import.
