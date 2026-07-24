@@ -35,12 +35,22 @@ export type Challenge = {
   best_streak: number;
 };
 
+export type AiVerdict = "on_track" | "too_short" | "too_long";
+
+export type EntryPlausibility = {
+  verdict: AiVerdict;
+  estimated_min: number;
+  estimated_max: number;
+  reason: string;
+};
+
 export type ChallengeEntry = {
   id: number;
   note: string;
   link: string | null;
   duration_minutes: number | null;
   logged_at: string;
+  ai: EntryPlausibility | null;
 };
 
 export type ChallengeDetail = Challenge & { entries: ChallengeEntry[] };

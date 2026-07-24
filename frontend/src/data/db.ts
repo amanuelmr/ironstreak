@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 
-import type { ChallengeStatus } from "../types";
+import type { ChallengeStatus, EntryPlausibility } from "../types";
 
 export type ChallengeRow = {
   id: number;
@@ -22,6 +22,7 @@ export type EntryRow = {
   duration_minutes: number | null;
   logged_at: string; // ISO timestamp
   local_date: string; // YYYY-MM-DD in the device's local time — the streak/activity key
+  ai?: EntryPlausibility | null; // optional Groq plausibility verdict (advisory)
 };
 
 export const db = new Dexie("ironstreak") as Dexie & {

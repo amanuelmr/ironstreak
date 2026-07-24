@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, Download, Flame, Moon, Sun, Trash2, Upload } from "lucide-react";
+import { Bell, Download, Flame, Moon, Sparkles, Sun, Trash2, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useTheme } from "../hooks/useTheme";
@@ -10,6 +10,15 @@ import {
   sendTestNotification,
   setReminderSettings,
 } from "../lib/reminders";
+import {
+  DEFAULT_MODEL,
+  MODELS,
+  getGroqSettings,
+  groqSupported,
+  hasGroqPermission,
+  requestGroqPermission,
+  setGroqSettings,
+} from "../lib/groq";
 
 export function Options() {
   const { theme, toggleTheme } = useTheme();
@@ -34,6 +43,41 @@ export function Options() {
     setReminderEnabled(enabled);
     setReminderTime(time);
     void setReminderSettings({ enabled, time });
+  }
+
+  const [groqEnabled, setGroqEnabled] = useState(false);
+  const [groqApiKey, setGroqApiKey] = useState("");
+  const [groqModel, setGroqModel] = useState(DEFAULT_MODEL);
+  const [groqMsg, setGroqMsg] = useState("");
+
+  useEffect(() => {
+    void getGroqSettings().then((s) => {
+      setGroqEnabled(s.enabled);
+      setGroqApiKey(s.apiKey);
+      setGroqModel(s.model);
+    });
+  }, []);
+
+  function persistGroq(next: { enabled?: boolean; apiKey?: string; model?: string }) {
+    const settings = {
+      enabled: next.enabled ?? groqEnabled,
+      apiKey: next.apiKey ?? groqApiKey,
+      model: next.model ?? groqModel,
+    };
+    void setGroqSettings(settings);
+  }
+
+  async function handleGroqToggle(checked: boolean) {
+    if (checked) {
+      const granted = (await hasGroqPermission()) || (await requestGroqPermission());
+      if (!granted) {
+        setGroqMsg("Permission to reach api.groq.com was declined — AI check stays off.");
+        return;
+      }
+    }
+    setGroqMsg("");
+    setGroqEnabled(checked);
+    persistGroq({ enabled: checked });
   }
 
   async function handleExport() {
@@ -170,6 +214,74 @@ export function Options() {
         ) : (
           <p className="options-note">
             Reminders are available when Ironstreak runs as an installed extension.
+          </p>
+        )}
+      </section>
+
+      <section className="tool-panel options-section">
+        <h2>
+          <Sparkles size={16} aria-hidden="true" /> Smart time check (Groq AI)
+        </h2>
+        {groqSupported ? (
+          <>
+            <p className="options-note">
+              Optional. When you log an entry with a link and minutes, Ironstreak asks Groq for a
+              rough opinion on whether the time looks plausible for that content. It's a heuristic,
+              not a fact-check, and it never blocks logging.
+            </p>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={groqEnabled}
+                onChange={(event) => void handleGroqToggle(event.target.checked)}
+              />
+              <span>
+                Enable AI time check
+                <small>Uses your own Groq API key, stored only in this browser.</small>
+              </span>
+            </label>
+            <label className="field">
+              <span>Groq API key</span>
+              <input
+                type="password"
+                value={groqApiKey}
+                placeholder="gsk_…"
+                autoComplete="off"
+                onChange={(event) => {
+                  setGroqApiKey(event.target.value);
+                  persistGroq({ apiKey: event.target.value });
+                }}
+              />
+            </label>
+            <label className="field ai-model">
+              <span>Model</span>
+              <select
+                value={groqModel}
+                onChange={(event) => {
+                  setGroqModel(event.target.value);
+                  persistGroq({ model: event.target.value });
+                }}
+              >
+                {MODELS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="options-note">
+              Your key is sent directly from your browser to Groq and never to us — there is no
+              server. Get a free key at{" "}
+              <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">
+                console.groq.com/keys
+              </a>
+              .
+            </p>
+            {groqMsg && <p className="options-message">{groqMsg}</p>}
+          </>
+        ) : (
+          <p className="options-note">
+            The AI time check is available when Ironstreak runs as an installed extension.
           </p>
         )}
       </section>

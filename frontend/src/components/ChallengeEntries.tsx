@@ -1,19 +1,61 @@
-import { Link as LinkIcon, Loader2, Plus, Trash2 } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link as LinkIcon, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
 
+import { qk } from "../api/keys";
+import { setEntryVerdict } from "../data/repo";
 import { useChallenge } from "../hooks/useChallenge";
 import { useChallengeMutations } from "../hooks/useChallengeMutations";
 import { formatDate, formatTime } from "../lib/dates";
+import { getGroqSettings, judgePlausibility } from "../lib/groq";
+import type { ChallengeEntry } from "../types";
 import { ErrorState } from "./ErrorState";
 import { Skeleton } from "./Skeleton";
+
+const VERDICT_LABEL: Record<string, string> = {
+  on_track: "on track",
+  too_short: "seems short",
+  too_long: "seems long",
+};
 
 export function ChallengeEntries({ challengeId }: { challengeId: number }) {
   const { data, isPending, isError, refetch } = useChallenge(challengeId, true);
   const { addEntry, removeEntry } = useChallengeMutations();
+  const queryClient = useQueryClient();
 
   const [note, setNote] = useState("");
   const [link, setLink] = useState("");
   const [minutes, setMinutes] = useState("");
+  const [groqOn, setGroqOn] = useState(false);
+  const [checking, setChecking] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    void getGroqSettings().then((s) => setGroqOn(s.enabled && !!s.apiKey));
+  }, []);
+
+  async function runCheck(entry: ChallengeEntry) {
+    if (entry.duration_minutes == null) return;
+    const settings = await getGroqSettings();
+    if (!settings.enabled || !settings.apiKey) return;
+
+    setChecking((prev) => new Set(prev).add(entry.id));
+    try {
+      const verdict = await judgePlausibility(
+        { url: entry.link, note: entry.note, minutes: entry.duration_minutes },
+        settings,
+      );
+      if (verdict) {
+        await setEntryVerdict(entry.id, verdict);
+        void queryClient.invalidateQueries({ queryKey: qk.challenge(challengeId) });
+      }
+    } finally {
+      setChecking((prev) => {
+        const next = new Set(prev);
+        next.delete(entry.id);
+        return next;
+      });
+    }
+  }
 
   function handleAdd(event: FormEvent) {
     event.preventDefault();
@@ -29,10 +71,11 @@ export function ChallengeEntries({ challengeId }: { challengeId: number }) {
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: (entry) => {
           setNote("");
           setLink("");
           setMinutes("");
+          void runCheck(entry); // best-effort AI plausibility check; never blocks
         },
       },
     );
@@ -94,6 +137,28 @@ export function ChallengeEntries({ challengeId }: { challengeId: number }) {
                       <LinkIcon size={12} aria-hidden="true" />
                       link
                     </a>
+                  )}
+                  {checking.has(entry.id) ? (
+                    <span className="ai-chip checking">
+                      <Loader2 size={11} className="spinner" aria-hidden="true" />
+                      checking…
+                    </span>
+                  ) : entry.ai ? (
+                    <span
+                      className={`ai-chip ${entry.ai.verdict}`}
+                      title={`${entry.ai.reason} (est ${entry.ai.estimated_min}–${entry.ai.estimated_max} min)`}
+                    >
+                      <Sparkles size={11} aria-hidden="true" />
+                      {VERDICT_LABEL[entry.ai.verdict]}
+                    </span>
+                  ) : (
+                    groqOn &&
+                    entry.duration_minutes != null && (
+                      <button type="button" className="ai-chip check-btn" onClick={() => void runCheck(entry)}>
+                        <Sparkles size={11} aria-hidden="true" />
+                        check time
+                      </button>
+                    )
                   )}
                 </div>
               </div>

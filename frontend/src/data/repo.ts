@@ -9,6 +9,7 @@ import type {
   ChallengeEntryPayload,
   ChallengeStatus,
   ChallengeUpdatePayload,
+  EntryPlausibility,
   Overview,
 } from "../types";
 import { db, type ChallengeRow, type EntryRow } from "./db";
@@ -32,7 +33,12 @@ function toEntryOut(row: EntryRow): ChallengeEntry {
     link: row.link,
     duration_minutes: row.duration_minutes,
     logged_at: row.logged_at,
+    ai: row.ai ?? null,
   };
+}
+
+export async function setEntryVerdict(entryId: number, ai: EntryPlausibility): Promise<void> {
+  await db.entries.update(entryId, { ai });
 }
 
 function serialize(challenge: ChallengeRow, entries: EntryRow[], today: string): Challenge {
