@@ -14,6 +14,8 @@ export type ActivityDay = {
   date: string;
   entry_count: number;
   minutes: number;
+  challenges: string[]; // distinct challenge titles logged that day
+  verdicts: Partial<Record<AiVerdict, number>>; // AI plausibility verdict counts among that day's entries
 };
 
 export type ChallengeStatus = "active" | "completed";

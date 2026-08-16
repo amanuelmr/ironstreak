@@ -26,11 +26,22 @@ function levelFor(minutes: number, entryCount: number): 0 | 1 | 2 | 3 | 4 {
   return 2; // logged something but no minutes recorded
 }
 
+const VERDICT_LABEL: Record<string, string> = {
+  on_track: "on track",
+  too_short: "seems short",
+  too_long: "seems long",
+};
+
 function cellLabel(key: string, day: ActivityDay | undefined): string {
   const base = formatShortWeekdayDate(key);
   if (!day) return `${base} · no activity`;
   const bits = [`${day.entry_count} ${day.entry_count === 1 ? "entry" : "entries"}`];
   if (day.minutes > 0) bits.push(`${day.minutes} min`);
+  if (day.challenges.length > 0) bits.push(day.challenges.join(", "));
+  const verdictBits = Object.entries(day.verdicts)
+    .filter(([, count]) => count && count > 0)
+    .map(([verdict, count]) => `${count} ${VERDICT_LABEL[verdict] ?? verdict}`);
+  if (verdictBits.length > 0) bits.push(verdictBits.join(", "));
   return `${base} · ${bits.join(" · ")}`;
 }
 

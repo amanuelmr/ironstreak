@@ -2,6 +2,7 @@ import { parseDateOnly, toDateKey } from "../lib/dates";
 import { computeStreak } from "../lib/streaks";
 import type {
   ActivityDay,
+  AiVerdict,
   Challenge,
   ChallengeCreatePayload,
   ChallengeDetail,
@@ -137,19 +138,39 @@ export async function submitReflection(payload: ReflectionPayload): Promise<void
 export async function getActivity(days: number): Promise<ActivityDay[]> {
   const today = parseDateOnly(todayKey());
   const cutoff = toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - (days - 1)));
-  const entries = await db.entries.where("local_date").aboveOrEqual(cutoff).toArray();
+  const [entries, challenges] = await Promise.all([
+    db.entries.where("local_date").aboveOrEqual(cutoff).toArray(),
+    db.challenges.toArray(),
+  ]);
+  const titleById = new Map(challenges.map((challenge) => [challenge.id, challenge.title]));
 
-  const byDay = new Map<string, { entry_count: number; minutes: number }>();
+  const byDay = new Map<
+    string,
+    { entry_count: number; minutes: number; challengeIds: Set<number>; verdicts: Partial<Record<AiVerdict, number>> }
+  >();
   for (const entry of entries) {
-    const bucket = byDay.get(entry.local_date) ?? { entry_count: 0, minutes: 0 };
+    const bucket = byDay.get(entry.local_date) ?? {
+      entry_count: 0,
+      minutes: 0,
+      challengeIds: new Set<number>(),
+      verdicts: {},
+    };
     bucket.entry_count += 1;
     bucket.minutes += entry.duration_minutes ?? 0;
+    bucket.challengeIds.add(entry.challenge_id);
+    if (entry.ai) bucket.verdicts[entry.ai.verdict] = (bucket.verdicts[entry.ai.verdict] ?? 0) + 1;
     byDay.set(entry.local_date, bucket);
   }
 
   return [...byDay.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, bucket]) => ({ date, ...bucket }));
+    .map(([date, bucket]) => ({
+      date,
+      entry_count: bucket.entry_count,
+      minutes: bucket.minutes,
+      challenges: [...bucket.challengeIds].map((id) => titleById.get(id) ?? "Untitled").sort(),
+      verdicts: bucket.verdicts,
+    }));
 }
 
 export async function getChallenges(status?: ChallengeStatus): Promise<Challenge[]> {
