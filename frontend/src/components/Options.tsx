@@ -95,9 +95,13 @@ export function Options() {
   async function handleImportFile(file: File) {
     try {
       const backup = JSON.parse(await file.text()) as Backup;
-      await importData(backup);
+      const result = await importData(backup);
       await queryClient.invalidateQueries();
-      setMessage(`Imported ${backup.challenges.length} challenges, ${backup.entries.length} entries.`);
+      const skipped = result.skippedChallenges + result.skippedEntries;
+      setMessage(
+        `Added ${result.addedChallenges} challenges, ${result.addedEntries} entries.` +
+          (skipped ? ` Skipped ${skipped} already in this browser.` : ""),
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Import failed.");
     }
@@ -141,7 +145,8 @@ export function Options() {
         <h2>Your data</h2>
         <p className="options-note">
           Everything lives in this browser only — nothing is uploaded. Export a backup regularly, and
-          use it to move your data to another browser or device.
+          use it to move your data to another browser or device. Importing merges into what's already
+          here — it never deletes or overwrites existing challenges or entries.
         </p>
         <div className="options-actions">
           <button type="button" className="secondary-button" onClick={() => void handleExport()}>

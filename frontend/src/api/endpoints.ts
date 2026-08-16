@@ -10,4 +10,5 @@ export {
   deleteChallenge,
   addChallengeEntry,
   deleteChallengeEntry,
+  updateChallengeEntry,
 } from "../data/repo";

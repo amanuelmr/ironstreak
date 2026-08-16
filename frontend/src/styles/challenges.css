@@ -333,6 +333,22 @@
   gap: var(--space-1);
 }
 
+.entry-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-1);
+}
+
+.entry-edit-btn {
+  color: var(--text-muted);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+
+.entry-edit-btn:hover {
+  color: var(--accent-text);
+}
+
 .entry-delete {
   flex-shrink: 0;
   color: var(--text-muted);
@@ -342,6 +358,33 @@
 
 .entry-delete:hover:not(:disabled) {
   color: var(--danger-text);
+}
+
+.entry-edit {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr 4.5rem auto;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.entry-edit input {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--bg-canvas);
+  color: var(--text-body);
+  font-size: var(--text-sm);
+}
+
+.entry-edit input:focus {
+  outline: none;
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.entry-edit-actions {
+  display: flex;
+  gap: var(--space-1);
 }
 
 /* History */
@@ -369,7 +412,8 @@
 }
 
 @media (max-width: 680px) {
-  .entry-add {
+  .entry-add,
+  .entry-edit {
     grid-template-columns: 1fr 1fr;
   }
 }

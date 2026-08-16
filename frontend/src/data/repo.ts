@@ -200,6 +200,24 @@ export async function addChallengeEntry(id: number, payload: ChallengeEntryPaylo
   return toEntryOut(entry!);
 }
 
+export async function updateChallengeEntry(
+  id: number,
+  entryId: number,
+  payload: ChallengeEntryPayload,
+): Promise<ChallengeEntry> {
+  const entry = await db.entries.get(entryId);
+  if (!entry || entry.challenge_id !== id) throw new Error("Entry not found.");
+  await db.entries.update(entryId, {
+    note: payload.note.trim(),
+    link: payload.link?.trim() || null,
+    duration_minutes: payload.duration_minutes ?? null,
+    // The claim changed, so any prior AI plausibility verdict no longer applies.
+    ai: null,
+  });
+  const updated = await db.entries.get(entryId);
+  return toEntryOut(updated!);
+}
+
 export async function deleteChallengeEntry(id: number, entryId: number): Promise<void> {
   const entry = await db.entries.get(entryId);
   if (!entry || entry.challenge_id !== id) throw new Error("Entry not found.");
@@ -220,15 +238,37 @@ export async function exportData(): Promise<Backup> {
   return { schemaVersion: 1, exported_at: new Date().toISOString(), challenges, entries };
 }
 
-export async function importData(backup: Backup): Promise<void> {
+export type ImportResult = {
+  addedChallenges: number;
+  addedEntries: number;
+  skippedChallenges: number;
+  skippedEntries: number;
+};
+
+/**
+ * Merges a backup into the current data instead of replacing it: only rows whose id
+ * isn't already present locally are added. This keeps a stale/old backup from wiping
+ * out data added since it was exported — the only backup path this app has.
+ */
+export async function importData(backup: Backup): Promise<ImportResult> {
   if (backup?.schemaVersion !== 1 || !Array.isArray(backup.challenges) || !Array.isArray(backup.entries)) {
     throw new Error("Not a valid Ironstreak backup file.");
   }
-  await db.transaction("rw", db.challenges, db.entries, async () => {
-    await db.challenges.clear();
-    await db.entries.clear();
-    await db.challenges.bulkAdd(backup.challenges);
-    await db.entries.bulkAdd(backup.entries);
+  return db.transaction("rw", db.challenges, db.entries, async () => {
+    const existingChallengeIds = new Set(await db.challenges.toCollection().primaryKeys());
+    const existingEntryIds = new Set(await db.entries.toCollection().primaryKeys());
+    const newChallenges = backup.challenges.filter((c) => !existingChallengeIds.has(c.id));
+    const newEntries = backup.entries.filter((e) => !existingEntryIds.has(e.id));
+
+    if (newChallenges.length) await db.challenges.bulkAdd(newChallenges);
+    if (newEntries.length) await db.entries.bulkAdd(newEntries);
+
+    return {
+      addedChallenges: newChallenges.length,
+      addedEntries: newEntries.length,
+      skippedChallenges: backup.challenges.length - newChallenges.length,
+      skippedEntries: backup.entries.length - newEntries.length,
+    };
   });
 }
 

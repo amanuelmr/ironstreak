@@ -6,6 +6,7 @@ import {
   deleteChallenge,
   deleteChallengeEntry,
   updateChallenge,
+  updateChallengeEntry,
 } from "../api/endpoints";
 import { qk } from "../api/keys";
 import type { ChallengeEntryPayload, ChallengeUpdatePayload } from "../types";
@@ -51,5 +52,11 @@ export function useChallengeMutations() {
     onSuccess: (_data, vars) => invalidateOne(vars.id),
   });
 
-  return { create, update, remove, addEntry, removeEntry };
+  const editEntry = useMutation({
+    mutationFn: ({ id, entryId, payload }: { id: number; entryId: number; payload: ChallengeEntryPayload }) =>
+      updateChallengeEntry(id, entryId, payload),
+    onSuccess: (_data, vars) => invalidateOne(vars.id),
+  });
+
+  return { create, update, remove, addEntry, removeEntry, editEntry };
 }

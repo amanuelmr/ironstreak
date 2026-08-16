@@ -1,7 +1,7 @@
 import confetti from "canvas-confetti";
 
 const COLORS = ["#4c8dff", "#2ecc8f", "#f5b74e", "#ffffff"];
-const MILESTONES = new Set([7, 30, 100]);
+export const MILESTONES = new Set([7, 30, 100]);
 
 export function fireSubmitConfetti(streakAfter: number): void {
   if (MILESTONES.has(streakAfter)) {

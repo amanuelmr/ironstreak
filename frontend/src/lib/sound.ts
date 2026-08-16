@@ -1,7 +1,7 @@
 let context: AudioContext | null = null;
 
 /** Two short sine notes; no audio asset needed. Silently no-ops if blocked. */
-export function playReminderChirp(): void {
+export function playChime(): void {
   try {
     context = context ?? new AudioContext();
     const now = context.currentTime;

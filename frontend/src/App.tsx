@@ -25,7 +25,7 @@ export default function App() {
       {apiState === "offline" ? (
         <div className="offline-panel">
           <ErrorState
-            message="Could not reach the Ironstreak API. Is the backend running?"
+            message="Could not read your Ironstreak data from this browser."
             onRetry={() => {
               void overviewQuery.refetch();
               void challengesQuery.refetch();
