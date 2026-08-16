@@ -11,4 +11,6 @@ export {
   addChallengeEntry,
   deleteChallengeEntry,
   updateChallengeEntry,
+  getStreakBreak,
+  submitReflection,
 } from "../data/repo";

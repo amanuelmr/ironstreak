@@ -2,6 +2,7 @@ import { ChallengesPanel } from "./components/ChallengesPanel";
 import { ContributionCalendar } from "./components/ContributionCalendar";
 import { ErrorState } from "./components/ErrorState";
 import { Header, type ApiState } from "./components/Header";
+import { StreakBreakPrompt } from "./components/StreakBreakPrompt";
 import { StreakHeader } from "./components/StreakHeader";
 import { useChallenges } from "./hooks/useChallenges";
 import { useOverview } from "./hooks/useOverview";
@@ -35,6 +36,7 @@ export default function App() {
       ) : (
         <>
           <StreakHeader />
+          <StreakBreakPrompt />
           <ContributionCalendar />
           <ChallengesPanel />
         </>

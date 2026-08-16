@@ -25,12 +25,28 @@ export type EntryRow = {
   ai?: EntryPlausibility | null; // optional Groq plausibility verdict (advisory)
 };
 
+export type ReflectionRow = {
+  id: number;
+  local_date: string; // YYYY-MM-DD the break was noticed on — at most one row per date
+  what_got_in_the_way: string | null;
+  smallest_next_step: string | null;
+  skipped: boolean; // true if the user dismissed the prompt without writing anything
+  created_at: string; // ISO
+};
+
 export const db = new Dexie("ironstreak") as Dexie & {
   challenges: EntityTable<ChallengeRow, "id">;
   entries: EntityTable<EntryRow, "id">;
+  reflections: EntityTable<ReflectionRow, "id">;
 };
 
 db.version(1).stores({
   challenges: "++id, status",
   entries: "++id, challenge_id, local_date",
+});
+
+db.version(2).stores({
+  challenges: "++id, status",
+  entries: "++id, challenge_id, local_date",
+  reflections: "++id, local_date",
 });

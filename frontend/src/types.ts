@@ -77,3 +77,15 @@ export type ChallengeEntryPayload = {
   link: string | null;
   duration_minutes: number | null;
 };
+
+export type StreakBreak = {
+  local_date: string; // today's key — the natural dedupe key for the prompt
+  longest_streak: number; // the best run the user had going, for the prompt's copy
+};
+
+export type ReflectionPayload = {
+  local_date: string;
+  what_got_in_the_way: string | null;
+  smallest_next_step: string | null;
+  skipped: boolean;
+};

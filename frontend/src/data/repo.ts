@@ -11,8 +11,10 @@ import type {
   ChallengeUpdatePayload,
   EntryPlausibility,
   Overview,
+  ReflectionPayload,
+  StreakBreak,
 } from "../types";
-import { db, type ChallengeRow, type EntryRow } from "./db";
+import { db, type ChallengeRow, type EntryRow, type ReflectionRow } from "./db";
 
 function todayKey(): string {
   return toDateKey(new Date());
@@ -99,6 +101,37 @@ export async function getOverview(): Promise<Overview> {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     server_today: today,
   };
+}
+
+/**
+ * Whether to show the "streak broke" reflection prompt: the iron streak is currently
+ * dead (nothing logged today or yesterday) but there's logging history, and the user
+ * hasn't already been prompted (or skipped) for today. Never blocks logging — this is
+ * purely advisory, same posture as the AI plausibility check.
+ */
+export async function getStreakBreak(): Promise<StreakBreak | null> {
+  const today = todayKey();
+  const [entries, promptedToday] = await Promise.all([
+    db.entries.toArray(),
+    db.reflections.where("local_date").equals(today).count(),
+  ]);
+  if (promptedToday > 0 || entries.length === 0) return null;
+
+  const dates = new Set(entries.map((entry) => entry.local_date));
+  const [current, longest] = computeStreak(dates, today);
+  if (current > 0) return null;
+
+  return { local_date: today, longest_streak: longest };
+}
+
+export async function submitReflection(payload: ReflectionPayload): Promise<void> {
+  await db.reflections.add({
+    local_date: payload.local_date,
+    what_got_in_the_way: payload.what_got_in_the_way?.trim() || null,
+    smallest_next_step: payload.smallest_next_step?.trim() || null,
+    skipped: payload.skipped,
+    created_at: new Date().toISOString(),
+  } as ReflectionRow);
 }
 
 export async function getActivity(days: number): Promise<ActivityDay[]> {
