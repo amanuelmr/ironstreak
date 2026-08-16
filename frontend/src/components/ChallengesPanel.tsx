@@ -34,7 +34,7 @@ export function ChallengesPanel() {
         description: values.description || null,
         start_date: values.start_date,
         end_date: values.end_date,
-        requires_daily_checkin: values.requires_daily_checkin,
+        checkin_frequency: values.checkin_frequency,
       },
       {
         onSuccess: () => setCreating(false),
@@ -66,7 +66,7 @@ export function ChallengesPanel() {
             description: "",
             start_date: today,
             end_date: defaultEnd,
-            requires_daily_checkin: false,
+            checkin_frequency: { kind: "none" },
           }}
           submitLabel={create.isPending ? "Creating…" : "Create challenge"}
           pending={create.isPending}

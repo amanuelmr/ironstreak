@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 
-import type { ChallengeStatus, EntryPlausibility } from "../types";
+import type { CheckinFrequency, ChallengeStatus, EntryPlausibility } from "../types";
 
 export type ChallengeRow = {
   id: number;
@@ -9,7 +9,7 @@ export type ChallengeRow = {
   start_date: string; // YYYY-MM-DD
   end_date: string; // YYYY-MM-DD
   status: ChallengeStatus;
-  requires_daily_checkin: boolean;
+  checkin_frequency: CheckinFrequency;
   created_at: string; // ISO
   completed_at: string | null; // ISO
 };
@@ -50,3 +50,21 @@ db.version(2).stores({
   entries: "++id, challenge_id, local_date",
   reflections: "++id, local_date",
 });
+
+// requires_daily_checkin: boolean -> checkin_frequency: CheckinFrequency, so a challenge
+// can require N-times-per-week check-ins instead of only daily or none.
+db.version(3)
+  .stores({
+    challenges: "++id, status",
+    entries: "++id, challenge_id, local_date",
+    reflections: "++id, local_date",
+  })
+  .upgrade(async (tx) => {
+    await tx
+      .table("challenges")
+      .toCollection()
+      .modify((row: ChallengeRow & { requires_daily_checkin?: boolean }) => {
+        row.checkin_frequency = row.requires_daily_checkin ? { kind: "daily" } : { kind: "none" };
+        delete row.requires_daily_checkin;
+      });
+  });

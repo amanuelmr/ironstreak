@@ -1,5 +1,5 @@
 import { parseDateOnly, toDateKey } from "../lib/dates";
-import { computeStreak } from "../lib/streaks";
+import { computeStreak, computeWeeklyStreak } from "../lib/streaks";
 import type {
   ActivityDay,
   AiVerdict,
@@ -49,14 +49,17 @@ function serialize(challenge: ChallengeRow, entries: EntryRow[], today: string):
 
   let currentStreak = 0;
   let bestStreak = 0;
-  if (challenge.requires_daily_checkin) {
+  if (challenge.checkin_frequency.kind !== "none") {
     const windowEnd = today < challenge.end_date ? today : challenge.end_date;
     const dates = new Set(
       entries
         .map((entry) => entry.local_date)
         .filter((date) => date >= challenge.start_date && date <= windowEnd),
     );
-    [currentStreak, bestStreak] = computeStreak(dates, windowEnd);
+    [currentStreak, bestStreak] =
+      challenge.checkin_frequency.kind === "daily"
+        ? computeStreak(dates, windowEnd)
+        : computeWeeklyStreak(dates, windowEnd, challenge.checkin_frequency.timesPerWeek);
   }
 
   return {
@@ -66,7 +69,7 @@ function serialize(challenge: ChallengeRow, entries: EntryRow[], today: string):
     start_date: challenge.start_date,
     end_date: challenge.end_date,
     status: challenge.status,
-    requires_daily_checkin: challenge.requires_daily_checkin,
+    checkin_frequency: challenge.checkin_frequency,
     created_at: challenge.created_at,
     completed_at: challenge.completed_at,
     entry_count: entries.length,
@@ -201,7 +204,7 @@ export async function createChallenge(payload: ChallengeCreatePayload): Promise<
     start_date: start,
     end_date: payload.end_date,
     status: "active",
-    requires_daily_checkin: payload.requires_daily_checkin,
+    checkin_frequency: payload.checkin_frequency,
     created_at: new Date().toISOString(),
     completed_at: null,
   } as ChallengeRow);
@@ -218,8 +221,7 @@ export async function updateChallenge(id: number, patch: ChallengeUpdatePayload)
   if (patch.description !== undefined) challenge.description = patch.description?.trim() || null;
   if (patch.start_date !== undefined) challenge.start_date = patch.start_date;
   if (patch.end_date !== undefined) challenge.end_date = patch.end_date;
-  if (patch.requires_daily_checkin !== undefined)
-    challenge.requires_daily_checkin = patch.requires_daily_checkin;
+  if (patch.checkin_frequency !== undefined) challenge.checkin_frequency = patch.checkin_frequency;
   if (challenge.end_date < challenge.start_date)
     throw new Error("End date must be on or after the start date.");
   if (patch.status !== undefined && patch.status !== challenge.status) {

@@ -20,6 +20,8 @@ export type ActivityDay = {
 
 export type ChallengeStatus = "active" | "completed";
 
+export type CheckinFrequency = { kind: "none" } | { kind: "daily" } | { kind: "weekly"; timesPerWeek: number };
+
 export type Challenge = {
   id: number;
   title: string;
@@ -27,7 +29,7 @@ export type Challenge = {
   start_date: string;
   end_date: string;
   status: ChallengeStatus;
-  requires_daily_checkin: boolean;
+  checkin_frequency: CheckinFrequency;
   created_at: string;
   completed_at: string | null;
   entry_count: number;
@@ -62,7 +64,7 @@ export type ChallengeCreatePayload = {
   description: string | null;
   start_date: string | null;
   end_date: string;
-  requires_daily_checkin: boolean;
+  checkin_frequency: CheckinFrequency;
 };
 
 export type ChallengeUpdatePayload = Partial<{
@@ -71,7 +73,7 @@ export type ChallengeUpdatePayload = Partial<{
   start_date: string;
   end_date: string;
   status: ChallengeStatus;
-  requires_daily_checkin: boolean;
+  checkin_frequency: CheckinFrequency;
 }>;
 
 export type ChallengeEntryPayload = {

@@ -52,7 +52,7 @@ export function ChallengeCard({ challenge }: { challenge: Challenge }) {
           description: values.description || null,
           start_date: values.start_date,
           end_date: values.end_date,
-          requires_daily_checkin: values.requires_daily_checkin,
+          checkin_frequency: values.checkin_frequency,
         },
       },
       {
@@ -80,7 +80,7 @@ export function ChallengeCard({ challenge }: { challenge: Challenge }) {
             description: challenge.description ?? "",
             start_date: challenge.start_date,
             end_date: challenge.end_date,
-            requires_daily_checkin: challenge.requires_daily_checkin,
+            checkin_frequency: challenge.checkin_frequency,
           }}
           submitLabel={update.isPending ? "Saving…" : "Save changes"}
           pending={update.isPending}
@@ -110,13 +110,18 @@ export function ChallengeCard({ challenge }: { challenge: Challenge }) {
           <span className="challenge-title">{challenge.title}</span>
         </button>
         <div className="challenge-head-right">
-          {challenge.requires_daily_checkin && challenge.status === "active" && (
+          {challenge.checkin_frequency.kind !== "none" && challenge.status === "active" && (
             <span
               className={`challenge-streak${challenge.current_streak >= 3 ? " hot" : ""}`}
-              title={`Daily check-in streak · best ${challenge.best_streak}`}
+              title={
+                challenge.checkin_frequency.kind === "daily"
+                  ? `Daily check-in streak · best ${challenge.best_streak}`
+                  : `${challenge.checkin_frequency.timesPerWeek}×/week check-in streak · best ${challenge.best_streak} wk`
+              }
             >
               <Flame size={13} aria-hidden="true" />
               {challenge.current_streak}
+              {challenge.checkin_frequency.kind === "weekly" && <span className="streak-unit">wk</span>}
             </span>
           )}
           <span className={`challenge-badge ${badge}`}>{badgeLabel}</span>
