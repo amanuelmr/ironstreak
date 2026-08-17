@@ -37,6 +37,7 @@ function toEntryOut(row: EntryRow): ChallengeEntry {
     duration_minutes: row.duration_minutes,
     logged_at: row.logged_at,
     ai: row.ai ?? null,
+    time_source: row.time_source ?? "manual",
   };
 }
 
@@ -251,6 +252,7 @@ export async function addChallengeEntry(id: number, payload: ChallengeEntryPaylo
     duration_minutes: payload.duration_minutes ?? null,
     logged_at: now.toISOString(),
     local_date: toDateKey(now),
+    time_source: payload.time_source ?? "manual",
   } as EntryRow);
   const entry = await db.entries.get(entryId);
   return toEntryOut(entry!);
@@ -267,8 +269,10 @@ export async function updateChallengeEntry(
     note: payload.note.trim(),
     link: payload.link?.trim() || null,
     duration_minutes: payload.duration_minutes ?? null,
-    // The claim changed, so any prior AI plausibility verdict no longer applies.
+    // The claim changed, so any prior AI verdict no longer applies, and a hand-edited
+    // duration is no longer the measured one even if it originally was.
     ai: null,
+    time_source: payload.time_source ?? "manual",
   });
   const updated = await db.entries.get(entryId);
   return toEntryOut(updated!);

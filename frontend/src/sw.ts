@@ -141,3 +141,135 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.runtime.onInstalled.addListener(() => {
   void reassertAlarm();
 });
+
+// --- on-device time tracking (opt-in) ---
+// Measures actual focused time on a linked resource's tab instead of asking the user
+// (or an AI) to estimate it. All state lives in chrome.storage.session — nothing leaves
+// the device, and nothing is tracked unless the user explicitly starts a timer for a
+// specific link. Tracking follows the TAB, not the exact URL: if the tracked tab
+// navigates elsewhere, time keeps accumulating — simpler and more robust to redirects
+// than trying to detect "did they leave the resource."
+
+const TIMER_KEY = "timerSession";
+
+type TimerSession = {
+  tabId: number;
+  link: string;
+  startedAt: number;
+  accumulatedMs: number;
+  focusedSince: number | null; // null while paused (tab/window not focused)
+};
+
+async function getTimerSession(): Promise<TimerSession | null> {
+  const stored = await chrome.storage.session.get(TIMER_KEY);
+  return (stored[TIMER_KEY] as TimerSession | undefined) ?? null;
+}
+
+async function setTimerSession(session: TimerSession | null): Promise<void> {
+  if (session) await chrome.storage.session.set({ [TIMER_KEY]: session });
+  else await chrome.storage.session.remove(TIMER_KEY);
+}
+
+function elapsedMs(session: TimerSession): number {
+  return session.accumulatedMs + (session.focusedSince !== null ? Date.now() - session.focusedSince : 0);
+}
+
+function withElapsed(session: TimerSession) {
+  return { ...session, elapsedMs: elapsedMs(session) };
+}
+
+function pause(session: TimerSession): TimerSession {
+  if (session.focusedSince === null) return session;
+  return { ...session, accumulatedMs: session.accumulatedMs + (Date.now() - session.focusedSince), focusedSince: null };
+}
+
+function resume(session: TimerSession): TimerSession {
+  if (session.focusedSince !== null) return session;
+  return { ...session, focusedSince: Date.now() };
+}
+
+async function startTimer(link: string): Promise<TimerSession> {
+  const existing = await getTimerSession();
+  if (existing) throw new Error("A timer is already running for another entry.");
+  const tab = await chrome.tabs.create({ url: link, active: true });
+  if (tab.id == null) throw new Error("Could not open the link in a new tab.");
+  const session: TimerSession = { tabId: tab.id, link, startedAt: Date.now(), accumulatedMs: 0, focusedSince: Date.now() };
+  await setTimerSession(session);
+  return session;
+}
+
+async function stopTimer(): Promise<number> {
+  const session = await getTimerSession();
+  if (!session) return 0;
+  const minutes = Math.round(elapsedMs(session) / 60_000);
+  await setTimerSession(null);
+  return minutes;
+}
+
+async function discardTimer(): Promise<void> {
+  await setTimerSession(null);
+}
+
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  void (async () => {
+    const session = await getTimerSession();
+    if (!session) return;
+    await setTimerSession(activeInfo.tabId === session.tabId ? resume(session) : pause(session));
+  })();
+});
+
+chrome.windows.onFocusChanged.addListener((windowId) => {
+  void (async () => {
+    const session = await getTimerSession();
+    if (!session) return;
+    if (windowId === chrome.windows.WINDOW_ID_NONE) {
+      await setTimerSession(pause(session));
+      return;
+    }
+    try {
+      const [activeTab] = await chrome.tabs.query({ active: true, windowId });
+      await setTimerSession(activeTab?.id === session.tabId ? resume(session) : pause(session));
+    } catch {
+      // window gone or query failed — leave session as-is
+    }
+  })();
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  void (async () => {
+    const session = await getTimerSession();
+    if (!session || session.tabId !== tabId) return;
+    // Freeze rather than discard: the dashboard can still stop & fill with what was tracked.
+    await setTimerSession(pause(session));
+  })();
+});
+
+type TimerMessage =
+  | { type: "timer/start"; link: string }
+  | { type: "timer/stop" }
+  | { type: "timer/discard" }
+  | { type: "timer/status" };
+
+chrome.runtime.onMessage.addListener((message: TimerMessage, _sender, sendResponse) => {
+  if (!message || typeof message !== "object" || !("type" in message)) return undefined;
+
+  if (message.type === "timer/start") {
+    startTimer(message.link)
+      .then((session) => sendResponse({ ok: true, session: withElapsed(session) }))
+      .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : "Could not start the timer." }));
+    return true;
+  }
+  if (message.type === "timer/stop") {
+    stopTimer().then((minutes) => sendResponse({ ok: true, minutes }));
+    return true;
+  }
+  if (message.type === "timer/discard") {
+    discardTimer().then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (message.type === "timer/status") {
+    getTimerSession().then((session) => sendResponse({ ok: true, session: session ? withElapsed(session) : null }));
+    return true;
+  }
+  return undefined;
+});

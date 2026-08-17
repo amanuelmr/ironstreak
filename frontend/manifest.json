@@ -9,6 +9,7 @@
     "128": "icons/128.png"
   },
   "permissions": ["unlimitedStorage", "storage", "alarms", "notifications"],
+  "optional_permissions": ["tabs"],
   "optional_host_permissions": ["https://api.groq.com/*"],
   "background": {
     "service_worker": "src/sw.ts",

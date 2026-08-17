@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 
-import type { CheckinFrequency, ChallengeStatus, EntryPlausibility } from "../types";
+import type { CheckinFrequency, ChallengeStatus, EntryPlausibility, TimeSource } from "../types";
 
 export type ChallengeRow = {
   id: number;
@@ -23,6 +23,7 @@ export type EntryRow = {
   logged_at: string; // ISO timestamp
   local_date: string; // YYYY-MM-DD in the device's local time — the streak/activity key
   ai?: EntryPlausibility | null; // optional Groq plausibility verdict (advisory)
+  time_source?: TimeSource; // absent = "manual", pre-dates this field
 };
 
 export type ReflectionRow = {

@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, Download, Flame, Moon, Sparkles, Sun, Trash2, Upload } from "lucide-react";
+import { Bell, Clock, Download, Flame, Moon, Sparkles, Sun, Trash2, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useTheme } from "../hooks/useTheme";
@@ -19,6 +19,13 @@ import {
   requestGroqPermission,
   setGroqSettings,
 } from "../lib/groq";
+import {
+  getTimeTrackingSettings,
+  hasTabsPermission,
+  requestTabsPermission,
+  setTimeTrackingSettings,
+  timerSupported,
+} from "../lib/timer";
 
 export function Options() {
   const { theme, toggleTheme } = useTheme();
@@ -57,6 +64,26 @@ export function Options() {
       setGroqModel(s.model);
     });
   }, []);
+
+  const [timeTrackingEnabled, setTimeTrackingEnabled] = useState(false);
+  const [timeTrackingMsg, setTimeTrackingMsg] = useState("");
+
+  useEffect(() => {
+    void getTimeTrackingSettings().then((s) => setTimeTrackingEnabled(s.enabled));
+  }, []);
+
+  async function handleTimeTrackingToggle(checked: boolean) {
+    if (checked) {
+      const granted = (await hasTabsPermission()) || (await requestTabsPermission());
+      if (!granted) {
+        setTimeTrackingMsg("Permission to see the active tab was declined — time tracking stays off.");
+        return;
+      }
+    }
+    setTimeTrackingMsg("");
+    setTimeTrackingEnabled(checked);
+    void setTimeTrackingSettings({ enabled: checked });
+  }
 
   function persistGroq(next: { enabled?: boolean; apiKey?: string; model?: string }) {
     const settings = {
@@ -287,6 +314,37 @@ export function Options() {
         ) : (
           <p className="options-note">
             The AI time check is available when Ironstreak runs as an installed extension.
+          </p>
+        )}
+      </section>
+
+      <section className="tool-panel options-section">
+        <h2>
+          <Clock size={16} aria-hidden="true" /> Time tracking
+        </h2>
+        {timerSupported ? (
+          <>
+            <p className="options-note">
+              Optional. When you start a timer for a linked entry, Ironstreak opens the link in a
+              tab and measures how long that tab was actually focused — no estimating or AI
+              guessing. Nothing leaves this browser.
+            </p>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={timeTrackingEnabled}
+                onChange={(event) => void handleTimeTrackingToggle(event.target.checked)}
+              />
+              <span>
+                Enable timed entries
+                <small>Adds a "Start timer" option next to the link field when logging progress.</small>
+              </span>
+            </label>
+            {timeTrackingMsg && <p className="options-message">{timeTrackingMsg}</p>}
+          </>
+        ) : (
+          <p className="options-note">
+            Time tracking is available when Ironstreak runs as an installed extension.
           </p>
         )}
       </section>

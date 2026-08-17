@@ -48,6 +48,8 @@ export type EntryPlausibility = {
   reason: string;
 };
 
+export type TimeSource = "manual" | "measured";
+
 export type ChallengeEntry = {
   id: number;
   note: string;
@@ -55,6 +57,7 @@ export type ChallengeEntry = {
   duration_minutes: number | null;
   logged_at: string;
   ai: EntryPlausibility | null;
+  time_source: TimeSource;
 };
 
 export type ChallengeDetail = Challenge & { entries: ChallengeEntry[] };
@@ -80,6 +83,7 @@ export type ChallengeEntryPayload = {
   note: string;
   link: string | null;
   duration_minutes: number | null;
+  time_source?: TimeSource;
 };
 
 export type StreakBreak = {
