@@ -2,6 +2,7 @@ import { Award, CheckCircle2, Flame, Hourglass, Layers } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useOverview } from "../hooks/useOverview";
+import { ShareSnapshotButton } from "./ShareSnapshotButton";
 import { Skeleton } from "./Skeleton";
 
 function StatCard({ label, value, sub, icon }: { label: string; value: string; sub?: string; icon: ReactNode }) {
@@ -45,10 +46,13 @@ export function StreakHeader() {
   return (
     <section className="streak-header">
       <div className="streak-hero">
-        <span className="section-label">
-          <Flame size={14} aria-hidden="true" />
-          Iron streak
-        </span>
+        <div className="streak-hero-head">
+          <span className="section-label">
+            <Flame size={14} aria-hidden="true" />
+            Iron streak
+          </span>
+          <ShareSnapshotButton />
+        </div>
         <strong className="streak-numeral">
           {s >= 3 && <Flame className="flame-flicker" size={44} strokeWidth={2.4} aria-hidden="true" />}
           {s}
